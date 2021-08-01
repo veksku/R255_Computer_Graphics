@@ -3,13 +3,6 @@
 __________________________________________________________________________________________________________________________________
 TODO: Sve
 
-04
--Transformations: vektori, matrice, operacije nad matricama, translacije, rotacije, GLM
-
--Coordinate systems: local space, world space, view space, clip space, screen space
-
--Camera: pozicija, pogled, opseg, kretanje kamere, Camera klasa (još abstrakcija)
-
 05
 -Colors: scena sa svetlom
 
