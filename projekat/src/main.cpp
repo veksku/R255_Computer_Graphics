@@ -25,14 +25,16 @@ const unsigned int SCR_HEIGHT = 600;
 Camera camera;
 
 bool firstMouse = true;
-float lastX =  800.0f / 2.0;
-float lastY =  600.0 / 2.0;
+float lastX =  SCR_WIDTH / 2.0f;
+float lastY =  SCR_HEIGHT / 2.0f;
 
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-int main()
-{
+//lighting
+glm::vec3 poklopacPos(0.0f, 0.43f, 0.0f);
+
+int main(){
     // glfw: initialize and configure
     // ------------------------------
     glfwInit();
@@ -47,8 +49,7 @@ int main()
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", nullptr, nullptr);
-    if (window == nullptr)
-    {
+    if (window == nullptr){
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
@@ -63,8 +64,7 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
@@ -77,18 +77,18 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
+    float vertices1[] = {
             -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
             -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
             -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
             -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
             -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
@@ -99,48 +99,111 @@ int main()
             -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
             -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
 
             -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
             -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            //            duz     vis    sir
-            //            -0.53f,  0.5f, -0.53f,  0.0f, 1.0f,
-            //             0.53f,  0.5f, -0.53f,  1.0f, 1.0f,
-            //             0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
-            //             0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
-            //            -0.53f,  0.5f,  0.53f,  0.0f, 0.0f,
-            //            -0.53f,  0.5f, -0.53f,  0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f
+//          duz     vis    sir
+//        -0.53f,  0.5f, -0.53f,  0.0f, 1.0f,
+//         0.53f,  0.5f, -0.53f,  1.0f, 1.0f,
+//         0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
+//         0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
+//        -0.53f,  0.5f,  0.53f,  0.0f, 0.0f,
+//        -0.53f,  0.5f, -0.53f,  0.0f, 1.0f
     };
 
-    glm::vec3 cubePositions[] = {
-            glm::vec3( 0.0f,  -0.5f,  0.0f),
-            glm::vec3( 0.0f,  -5.0f, 0.0f)
+    float vertices2[] = {
+            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            0.53f, -0.1f, -0.53f,  1.0f, 0.0f,
+            0.53f,  0.1f, -0.53f,  1.0f, 0.294f,
+            0.53f,  0.1f, -0.53f,  1.0f, 0.294f,
+            -0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
+            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+
+            -0.53f, -0.1f,  0.53f,  0.0f, 0.0f,
+            0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
+            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+            -0.53f,  0.1f,  0.53f,  0.0f, 0.294f,
+            -0.53f, -0.1f,  0.53f,  0.0f, 0.0f,
+
+            -0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+            -0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
+            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            -0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
+            -0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+
+            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+            0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
+            0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
+            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+//            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f
+            //          duz     vis    sir
+            -0.53f,  0.1f, -0.53f,  0.0f, 1.0f,
+            0.53f,  0.1f, -0.53f,  1.0f, 1.0f,
+            0.53f,  0.1f,  0.53f,  1.0f, 0.0f,
+            0.53f,  0.1f,  0.53f,  1.0f, 0.0f,
+            -0.53f,  0.1f,  0.53f,  0.0f, 0.0f,
+            -0.53f,  0.1f, -0.53f,  0.0f, 1.0f
     };
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
 
-    glBindVertexArray(VAO);
+//    glm::vec3 cubePositions[] = {
+//            glm::vec3( 0.0f,  -0.5f,  0.0f),
+//            glm::vec3( 0.0f,  -5.0f, 0.0f)
+//    };
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //_______________________________________
+    //crtanje kutije
+    unsigned int VBO1, kutijaVAO;
+    glGenVertexArrays(1, &kutijaVAO);
+    glGenBuffers(1, &VBO1);
 
-    // position attribute
+    glBindVertexArray(kutijaVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
-    // texture coord attribute
+
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    //asd
+    //_______________________________________
+    //crtanje poklopca
+    unsigned int VBO2, poklopacVAO;
+    glGenVertexArrays(1, &poklopacVAO);
+    glGenBuffers(1, &VBO2);
 
+    glBindVertexArray(poklopacVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    //_______________________________________
 
     unsigned int texture1,texture2;
     // tekstura za boju ukrasne folije
@@ -217,46 +280,62 @@ int main()
         // activate shader
         shader.use();
 
-        // create transformations
-        //glm::mat4 model         = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        //glm::mat4 view          = glm::mat4(1.0f);
-        //glm::mat4 projection    = glm::mat4(1.0f);
-        //model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
-        //model = glm::rotate(model, (float)1, glm::vec3(0.5f, 1.0f, 0.25f));
-        //view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        // retrieve the matrix uniform locations
-        //unsigned int modelLoc = glGetUniformLocation(shader.ID, "model");
         unsigned int viewLoc  = glGetUniformLocation(shader.ID, "view");
-        // pass them to the shaders (3 different ways)
-        //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        //glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
-        // note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
         shader.setMat4("projection", projection);
 
         // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
         shader.setMat4("view", view);
 
-        // render box
-        glBindVertexArray(VAO);
-        for (unsigned int i = 0; i < 2; i++){
-            // calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-            if (i==0)
-                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-            else
-                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::translate(model, cubePositions[i]);
-
-            shader.setMat4("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-
-
-
+        // render kutije
+        glBindVertexArray(kutijaVAO);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+        shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // render poklopca
+        glBindVertexArray(poklopacVAO);
+        model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
+        model = glm::translate(model, poklopacPos);
+        //model = glm::rotate(model, (float)1, glm::vec3(0.0f, 0.0f, 3.0f)); //open model coords
+        //model = glm::translate(model, poklopacOpenPos); // open model coords
+
+        shader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+//        glBindVertexArray(poklopacVAO);
+//        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
+
+
+
+
+
+
+
+
+//        for (unsigned int i = 0; i < 2; i++){
+//            // calculate the model matrix for each object and pass it to shader before drawing
+//            glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+//            if (i==0)
+//                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+//            else
+//                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+//            model = glm::translate(model, cubePositions[i]);
+//
+//            shader.setMat4("model", model);
+//
+//            glDrawArrays(GL_TRIANGLES, 0, 36);
+//        }
+
+
+
+        //glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -267,8 +346,10 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &kutijaVAO);//vrv kutijaVAO
+    glDeleteVertexArrays(1, &poklopacVAO);
+    glDeleteBuffers(1, &VBO1);
+    glDeleteBuffers(1, &VBO2);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
