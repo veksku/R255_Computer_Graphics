@@ -1,4 +1,4 @@
-# Install script for directory: /home/veljko/Desktop/projekat/libs/glad
+# Install script for directory: /home/veljko/R255_Computer_Graphics/projekat/libs/glad
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

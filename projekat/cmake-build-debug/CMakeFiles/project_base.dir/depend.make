@@ -5,6 +5,8 @@ CMakeFiles/project_base.dir/src/main.cpp.o: \
  ../include/common.h \
  ../include/learnopengl/filesystem.h \
  ../include/learnopengl/shader_m.h \
+ ../include/rg/Camera.h \
+ ../include/rg/Error.h \
  ../include/stb_image.h \
  ../libs/glad/include/KHR/khrplatform.h \
  ../libs/glad/include/glad/glad.h \

@@ -38,6 +38,22 @@ iostream
 common.h
 -
 
+../include/rg/Camera.h
+glad/glad.h
+-
+glm/glm.hpp
+-
+glm/gtc/matrix_transform.hpp
+-
+vector
+-
+
+../include/rg/Error.h
+iostream
+-
+glad/glad.h
+-
+
 ../include/stb_image.h
 stb_image.h
 ../include/stb_image.h
@@ -80,7 +96,7 @@ stdint.h
 KHR/khrplatform.h
 -
 
-/home/veljko/Desktop/projekat/src/main.cpp
+/home/veljko/R255_Computer_Graphics/projekat/src/main.cpp
 glad/glad.h
 -
 GLFW/glfw3.h
@@ -96,6 +112,10 @@ glm/gtc/type_ptr.hpp
 learnopengl/filesystem.h
 -
 learnopengl/shader_m.h
+-
+rg/Error.h
+-
+rg/Camera.h
 -
 iostream
 -

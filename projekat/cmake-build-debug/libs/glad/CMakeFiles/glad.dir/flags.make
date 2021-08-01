@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = 
 
-C_INCLUDES = -I/home/veljko/Desktop/projekat/libs/glad/include
+C_INCLUDES = -I/home/veljko/R255_Computer_Graphics/projekat/libs/glad/include
 
 C_FLAGS = -g
 

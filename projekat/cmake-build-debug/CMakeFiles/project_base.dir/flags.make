@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DGLFW_DLL -DIMGUI_IMPL_OPENGL_LOADER_GLAD
 
-CXX_INCLUDES = -I/home/veljko/Desktop/projekat/cmake-build-debug/configuration -I/home/veljko/Desktop/projekat/include -I/home/veljko/Desktop/projekat/libs/glad/include -I/home/veljko/Desktop/projekat/libs/imgui/include
+CXX_INCLUDES = -I/home/veljko/R255_Computer_Graphics/projekat/cmake-build-debug/configuration -I/home/veljko/R255_Computer_Graphics/projekat/include -I/home/veljko/R255_Computer_Graphics/projekat/libs/glad/include -I/home/veljko/R255_Computer_Graphics/projekat/libs/imgui/include
 
 CXX_FLAGS = -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -O3 -g -std=gnu++14
 

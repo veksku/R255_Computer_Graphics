@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/veljko/Desktop/projekat/libs/stb_image.cpp" "/home/veljko/Desktop/projekat/cmake-build-debug/CMakeFiles/STB_IMAGE.dir/libs/stb_image.cpp.o"
+  "/home/veljko/R255_Computer_Graphics/projekat/libs/stb_image.cpp" "/home/veljko/R255_Computer_Graphics/projekat/cmake-build-debug/CMakeFiles/STB_IMAGE.dir/libs/stb_image.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
