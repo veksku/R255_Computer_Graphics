@@ -59,6 +59,7 @@ int main()
     glfwSetScrollCallback(window, scroll_callback);
 
     // komanda glfwu da prati misa
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -121,8 +122,8 @@ int main()
     };
 
     glm::vec3 cubePositions[] = {
-            glm::vec3( 0.0f,  0.0f,  0.0f),
-            glm::vec3( 0.0f,  -1.5f, 0.0f)
+            glm::vec3( 0.0f,  -0.5f,  0.0f),
+            glm::vec3( 0.0f,  -5.0f, 0.0f)
     };
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);

@@ -39,8 +39,6 @@ common.h
 -
 
 ../include/rg/Camera.h
-glad/glad.h
--
 glm/glm.hpp
 -
 glm/gtc/matrix_transform.hpp
