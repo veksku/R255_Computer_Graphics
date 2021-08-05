@@ -163,25 +163,25 @@ in vec2 TexCoords;
 
 uniform vec3 viewPos;
 uniform Material material;
-uniform DirLight light;
+uniform DirLight dirlight;
 uniform PointLight pointlight;
 
 void main()
 {
     // ambient
-    vec3 ambient = light.ambient * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
+    vec3 ambient = dirlight.ambient * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
 
     vec3 norm = normalize(Normal);
     // diffuse
-    vec3 lightDir = normalize(-light.direction);
+    vec3 lightDir = normalize(-dirlight.direction);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
+    vec3 diffuse = dirlight.diffuse * diff * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
 
     // specular
     vec3 viewDir = normalize(viewPos - FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = light.specular * spec * texture(material.specular, TexCoords).rgb;
+    vec3 specular = dirlight.specular * spec * texture(material.specular, TexCoords).rgb;
 
     vec3 result = ambient + diffuse + specular;
     // result trenutno sadrzi samo DirLight----------------------------------------
@@ -193,20 +193,16 @@ void main()
     // spekularno je vec definisano
 
     // opadanje jacine svetlosti
-    //float distance = length(pointlight.position - FragPos);
-    //float attenuation = 1.0 / (pointlight.constant + pointlight.linear * distance + pointlight.quadratic * (distance * distance));
+    float distance = length(pointlight.position - FragPos);
+    float attenuation = 1.0 / (pointlight.constant + pointlight.linear * distance + pointlight.quadratic * (distance * distance));
     // combine results
-    ambient = pointlight.ambient * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
-    diffuse = pointlight.diffuse * diff * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
-    specular = pointlight.specular * spec * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.4).rgb;
-//     ambient *= attenuation;
-//     diffuse *= attenuation;
-//     specular *= attenuation;
+    ambient = pointlight.ambient * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.45).rgb;
+    diffuse = pointlight.diffuse * diff * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.45).rgb;
+    specular = pointlight.specular * spec * mix(texture(material.texture1diffuse, TexCoords), texture(material.texture2diffuse, TexCoords), 0.45).rgb;
+    ambient *= attenuation;
+    diffuse *= attenuation;
+    specular *= attenuation;
     result = result + ambient + diffuse + specular;
-
-
-
-
     FragColor = vec4(result, 1.0);
 }
 

@@ -195,14 +195,14 @@ int main(){
 
     //_______________________________________
     // crtanje kutije izvora svetlosti
-//    unsigned int lightCubeVAO;
-//    glGenVertexArrays(1, &lightCubeVAO);
-//    glBindVertexArray(lightCubeVAO);
-//
-//    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-//    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
-//    glEnableVertexAttribArray(0);
+    unsigned int lightCubeVAO;
+    glGenVertexArrays(1, &lightCubeVAO);
+    glBindVertexArray(lightCubeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
 
     //_______________________________________
     //crtanje poklopca
@@ -253,26 +253,34 @@ int main(){
         // ------
         glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
+        float time = glfwGetTime();
+        //racunanje vrednosti vremena da bi stisak tastera P mogao da stimulira pauziranje lampe
+        if (flag == 1)
+            currentTime = time - timeDiff;
+        else
+            timeDiff = time - currentTime;
 
         lightingShader.use();
 //        lightingShader.setVec3("light.position", lightPos);
-        lightingShader.setVec3("light.direction", glm::vec3(0.1f, -0.25, -0.4f));
-        lightingShader.setVec3("viewPos", camera.Position);
 
-// light properties
-        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-//konstante za opadanje jacine svetlosti
-//        lightingShader.setFloat("light.constant", 1.0f);
-//        lightingShader.setFloat("light.linear", 0.0f);
-//        lightingShader.setFloat("light.quadratic", 0.032f);
-// material properties
-        lightingShader.setFloat("material.shininess", 64.0f);
-        //konstante za opadanje jacine svetlosti
-//        lightingShader.setFloat("light.constant", 1.0f);
-//        lightingShader.setFloat("light.linear", 0.0f);
-//        lightingShader.setFloat("light.quadratic", 0.032f);
+        lightingShader.setVec3("viewPos", camera.Position);
+        lightingShader.setFloat("material.shininess", 4.0f);
+        lightingShader.setVec3("dirlight.direction", glm::vec3(0.1f, -0.25, -0.4f));
+
+// dirlight properties
+        lightingShader.setVec3("dirlight.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("dirlight.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("dirlight.specular", 1.0f, 1.0f, 1.0f);
+
+// pointlight properties
+        lightingShader.setVec3("pointlight.position", flashlightPos+glm::vec3(1.3*cos(currentTime)-0.2, 0.0f, 1.3*sin(currentTime)-0.131));
+        lightingShader.setVec3("pointlight.ambient", 0.05f, 0.05f, 0.05f);
+        lightingShader.setVec3("pointlight.diffuse", 0.8f, 0.8f, 0.8f);
+        lightingShader.setVec3("pointlight.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setFloat("pointlight.constant", 1.0f);
+        lightingShader.setFloat("pointlight.linear", 0.09);
+        lightingShader.setFloat("pointlight.quadratic", 0.032);
+
         // material properties
         //lightingShader.setFloat("material.shininess", 64.0f);
 
@@ -332,16 +340,18 @@ int main(){
 //        glDrawArrays(GL_TRIANGLES, 0, 30);
 
         //render svetlosne kutije
-//        lightCubeShader.use();
-//        lightCubeShader.setMat4("projection", projection);
-//        lightCubeShader.setMat4("view", view);
-//        model = glm::mat4(1.0f);
-//        model = glm::translate(model, lightPos);
-//        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-//        lightCubeShader.setMat4("model", model);
-//
-//        glBindVertexArray(lightCubeVAO);
-//        glDrawArrays(GL_TRIANGLES, 0, 30);
+        flashlightShader.use();
+        flashlightShader.setMat4("projection", projection);
+        flashlightShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, flashlightPos);
+        model = glm::translate(model, glm::vec3(1.3*cos(currentTime)-0.2, 0.0f, 1.3*sin(currentTime)-0.131));
+        model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
+        model = glm::scale(model, glm::vec3(0.12f)); // a smaller cube
+        flashlightShader.setMat4("model", model);
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 30);
         //        glBindVertexArray(poklopacVAO);
         //        glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -350,17 +360,10 @@ int main(){
 //        flashlightShader.setMat4("projection", projection);
 //        flashlightShader.setMat4("view", view);
 //        glDisable(GL_TEXTURE_2D);
+        lightingShader.use();
         model = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
-
-        float time = glfwGetTime();
-        //racunanje vrednosti vremena da bi stisak tastera P mogao da stimulira pauziranje lampe
-        if (flag == 1)
-            currentTime = time - timeDiff;
-        else
-            timeDiff = time - currentTime;
-
-        model = glm::translate(model, glm::vec3(0.6*cos(currentTime), 0.0f, 0.6*sin(currentTime)));
+        model = glm::translate(model, glm::vec3(1.3*cos(currentTime), 0.0f, 1.3*sin(currentTime)));
         model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
         model = glm::scale(model, glm::vec3(.1f));
         lightingShader.setMat4("model", model);
