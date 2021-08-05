@@ -1,14 +1,4 @@
 # R255_Computer_Graphics
-
-TODO: Sve
-
-08
--Model i osvetljenje
-
--ImGui: GUI biblioteka
-
--Text Rendering: prikazivanje teksta
-
 __________________________________________________________________________________________________________________________________
 TODO: Bar jedna od ponudjenih
 
