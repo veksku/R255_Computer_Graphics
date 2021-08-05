@@ -10,19 +10,22 @@
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader_m.h>
 #include <rg/Error.h>
-#include <rg/Camera.h>
+#include <learnopengl/camera.h>
+#include <learnopengl/model.h>
 #include <iostream>
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+unsigned int loadTexture(const char *path);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera;
+Camera camera(glm::vec3(0.0f, 0.0f, 7.0f));;
 
 bool firstMouse = true;
 float lastX =  SCR_WIDTH / 2.0f;
@@ -31,8 +34,15 @@ float lastY =  SCR_HEIGHT / 2.0f;
 float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
-//lighting
+float currentTime = glfwGetTime();
+float timeDiff = 0.0f;
+int flag = 1;
+
+//pozicija poklopca
 glm::vec3 poklopacPos(0.0f, 0.43f, 0.0f);
+
+//lightcube
+glm::vec3 flashlightPos(2.0f, 0.1f, 1.3f);
 
 int main(){
     // glfw: initialize and configure
@@ -56,12 +66,13 @@ int main(){
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
     // komanda glfwu da prati misa
-    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
@@ -73,102 +84,96 @@ int main(){
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
-    Shader shader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
+    Shader lightingShader("resources/shaders/all_lights.vs", "resources/shaders/all_lights.fs");
+    Shader flashlightShader("resources/shaders/flashlight.vs", "resources/shaders/flashlight.fs");
 
+    Model ourModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices1[] = {
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
 
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
 
-            -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
 
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-             0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
 
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-             0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-             0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f
-//          duz     vis    sir
-//        -0.53f,  0.5f, -0.53f,  0.0f, 1.0f,
-//         0.53f,  0.5f, -0.53f,  1.0f, 1.0f,
-//         0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
-//         0.53f,  0.5f,  0.53f,  1.0f, 0.0f,
-//        -0.53f,  0.5f,  0.53f,  0.0f, 0.0f,
-//        -0.53f,  0.5f, -0.53f,  0.0f, 1.0f
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+
+            //nema gore
+            -0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+            0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+            0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            -0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+            -0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
     };
 
     float vertices2[] = {
-            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
-            0.53f, -0.1f, -0.53f,  1.0f, 0.0f,
-            0.53f,  0.1f, -0.53f,  1.0f, 0.294f,
-            0.53f,  0.1f, -0.53f,  1.0f, 0.294f,
-            -0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
-            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
+            -0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+             0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
+             0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.294f,
+             0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.294f,
+            -0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.294f,
+            -0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
 
-            -0.53f, -0.1f,  0.53f,  0.0f, 0.0f,
-            0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
-            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
-            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
-            -0.53f,  0.1f,  0.53f,  0.0f, 0.294f,
-            -0.53f, -0.1f,  0.53f,  0.0f, 0.0f,
+            -0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+             0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+             0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.294f,
+             0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.294f,
+            -0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.294f,
+            -0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
 
-            -0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
-            -0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
-            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
-            -0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
-            -0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
-            -0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+            -0.53f,  0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.294f,
+            -0.53f,  0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.294f,
+            -0.53f, -0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.0f,
+            -0.53f, -0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.0f,
+            -0.53f, -0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.0f,
+            -0.53f,  0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.294f,
 
-            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
-            0.53f,  0.1f, -0.53f,  0.0f, 0.294f,
-            0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
-            0.53f, -0.1f, -0.53f,  0.0f, 0.0f,
-            0.53f, -0.1f,  0.53f,  1.0f, 0.0f,
-            0.53f,  0.1f,  0.53f,  1.0f, 0.294f,
+             0.53f,  0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.294f,
+             0.53f,  0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.294f,
+             0.53f, -0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+             0.53f, -0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+             0.53f, -0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+             0.53f,  0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.294f,
 
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-//            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-//            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-//            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f
-            //          duz     vis    sir
-            -0.53f,  0.1f, -0.53f,  0.0f, 1.0f,
-            0.53f,  0.1f, -0.53f,  1.0f, 1.0f,
-            0.53f,  0.1f,  0.53f,  1.0f, 0.0f,
-            0.53f,  0.1f,  0.53f,  1.0f, 0.0f,
-            -0.53f,  0.1f,  0.53f,  0.0f, 0.0f,
-            -0.53f,  0.1f, -0.53f,  0.0f, 1.0f
+            //nema dole
+
+            //duz     vis    sir
+            -0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+             0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+             0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            -0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+            -0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
     };
-
-//    glm::vec3 cubePositions[] = {
-//            glm::vec3( 0.0f,  -0.5f,  0.0f),
-//            glm::vec3( 0.0f,  -5.0f, 0.0f)
-//    };
 
     //_______________________________________
     //crtanje kutije
@@ -176,85 +181,63 @@ int main(){
     glGenVertexArrays(1, &kutijaVAO);
     glGenBuffers(1, &VBO1);
 
-    glBindVertexArray(kutijaVAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO1);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
+    glBindVertexArray(kutijaVAO);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
-    //asd
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    //_______________________________________
+    // crtanje kutije izvora svetlosti
+//    unsigned int lightCubeVAO;
+//    glGenVertexArrays(1, &lightCubeVAO);
+//    glBindVertexArray(lightCubeVAO);
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+//    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+//    glEnableVertexAttribArray(0);
+
     //_______________________________________
     //crtanje poklopca
     unsigned int VBO2, poklopacVAO;
     glGenVertexArrays(1, &poklopacVAO);
     glGenBuffers(1, &VBO2);
 
-    glBindVertexArray(poklopacVAO);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO2);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
+    glBindVertexArray(poklopacVAO);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
     //_______________________________________
 
-    unsigned int texture1,texture2;
-    // tekstura za boju ukrasne folije
-    glGenTextures(1, &texture1);
-    glBindTexture(GL_TEXTURE_2D, texture1);
-    // wrap
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // filter
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // ucitavanje slike, pravljenje teksture i generisanje mipmapa
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
-    unsigned char *data = stbi_load(FileSystem::getPath("resources/textures/gift.jpg").c_str(), &width, &height, &nrChannels, 0);
-    if (data){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else{
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
-    // tekstura za efekat lepka
-    glGenTextures(1, &texture2);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    // wrap
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // filter
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // ucitavanje slike, pravljenje teksture i generisanje mipmapa
-    data = stbi_load(FileSystem::getPath("resources/textures/glue.jpg").c_str(), &width, &height, &nrChannels, 0);
-    if (data){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else{
-        std::cout << "Failed to load texture" << std::endl;
-    }
-    stbi_image_free(data);
+    unsigned int texture1diffuse = loadTexture("resources/textures/gift.jpg"); //diffuse 1
+    unsigned int texture2diffuse = loadTexture("resources/textures/glue.jpg"); //diffuse 2
+
+    lightingShader.use();
+    lightingShader.setInt("material.texture1diffuse",0);
+    lightingShader.setInt("material.texture2diffuse", 1);
+
+
+
     // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
     // -------------------------------------------------------------------------------------------
-    shader.use();
-    shader.setInt("texture1", 0);
-    shader.setInt("texture2", 1);
+//    shader.use();
+//    shader.setInt("texture1", 0);
+//    shader.setInt("texture2", 1);
 
-    camera.Position = glm::vec3 (0,0,3);
-    camera.Front = glm::vec3 (0,0,-1);
-    camera.Up = glm::vec3 (0,1,0);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -268,74 +251,122 @@ int main(){
 
         // render
         // ------
-        glClearColor(0.5f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
+        lightingShader.use();
+//        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("light.direction", glm::vec3(0.1f, -0.25, -0.4f));
+        lightingShader.setVec3("viewPos", camera.Position);
+
+// light properties
+        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+//konstante za opadanje jacine svetlosti
+//        lightingShader.setFloat("light.constant", 1.0f);
+//        lightingShader.setFloat("light.linear", 0.0f);
+//        lightingShader.setFloat("light.quadratic", 0.032f);
+// material properties
+        lightingShader.setFloat("material.shininess", 64.0f);
+        //konstante za opadanje jacine svetlosti
+//        lightingShader.setFloat("light.constant", 1.0f);
+//        lightingShader.setFloat("light.linear", 0.0f);
+//        lightingShader.setFloat("light.quadratic", 0.032f);
+        // material properties
+        //lightingShader.setFloat("material.shininess", 64.0f);
+
+
         // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, texture1);
+//        glActiveTexture(GL_TEXTURE1);
+//        glBindTexture(GL_TEXTURE_2D, texture2);
 
         // activate shader
-        shader.use();
+//        shader.use();
+//        shader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+//        shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+//        shader.setVec3("lightPos", lightPos);
+
+//        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+//        shader.setMat4("projection", projection);
+//
+//        // camera/view transformation
+//        glm::mat4 view = camera.GetViewMatrix();
+//        shader.setMat4("view", view);
 
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        unsigned int viewLoc  = glGetUniformLocation(shader.ID, "view");
-        shader.setMat4("projection", projection);
-
-        // camera/view transformation
         glm::mat4 view = camera.GetViewMatrix();
-        shader.setMat4("view", view);
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture1diffuse);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture2diffuse);
 
         // render kutije
-        glBindVertexArray(kutijaVAO);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-        shader.setMat4("model", model);
+        lightingShader.setMat4("model", model);
+
+        glBindVertexArray(kutijaVAO);
+
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // render poklopca
-        glBindVertexArray(poklopacVAO);
-        model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
-        model = glm::translate(model, poklopacPos);
+
+
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
+
+        glm::mat4 model2 = glm::mat4(1.0f);
+        model2 = glm::rotate(model2, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
+        model2 = glm::translate(model2, poklopacPos);
         //model = glm::rotate(model, (float)1, glm::vec3(0.0f, 0.0f, 3.0f)); //open model coords
         //model = glm::translate(model, poklopacOpenPos); // open model coords
+        lightingShader.setMat4("model", model2);
 
-        shader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(poklopacVAO);
+//        glDrawArrays(GL_TRIANGLES, 0, 30);
 
-
-//        glBindVertexArray(poklopacVAO);
-//        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-
-
-
-
-
-
-
-
-
-//        for (unsigned int i = 0; i < 2; i++){
-//            // calculate the model matrix for each object and pass it to shader before drawing
-//            glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-//            if (i==0)
-//                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-//            else
-//                model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-//            model = glm::translate(model, cubePositions[i]);
+        //render svetlosne kutije
+//        lightCubeShader.use();
+//        lightCubeShader.setMat4("projection", projection);
+//        lightCubeShader.setMat4("view", view);
+//        model = glm::mat4(1.0f);
+//        model = glm::translate(model, lightPos);
+//        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+//        lightCubeShader.setMat4("model", model);
 //
-//            shader.setMat4("model", model);
-//
-//            glDrawArrays(GL_TRIANGLES, 0, 36);
-//        }
+//        glBindVertexArray(lightCubeVAO);
+//        glDrawArrays(GL_TRIANGLES, 0, 30);
+        //        glBindVertexArray(poklopacVAO);
+        //        glDrawArrays(GL_TRIANGLES, 0, 36);
 
 
+//        flashlightShader.use();
+//        flashlightShader.setMat4("projection", projection);
+//        flashlightShader.setMat4("view", view);
+//        glDisable(GL_TEXTURE_2D);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, flashlightPos);
+
+        float time = glfwGetTime();
+        //racunanje vrednosti vremena da bi stisak tastera P mogao da stimulira pauziranje lampe
+        if (flag == 1)
+            currentTime = time - timeDiff;
+        else
+            timeDiff = time - currentTime;
+
+        model = glm::translate(model, glm::vec3(0.6*cos(currentTime), 0.0f, 0.6*sin(currentTime)));
+        model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
+        model = glm::scale(model, glm::vec3(.1f));
+        lightingShader.setMat4("model", model);
 
         //glDrawArrays(GL_TRIANGLES, 0, 36);
+        ourModel.Draw(lightingShader);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -346,7 +377,7 @@ int main(){
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &kutijaVAO);//vrv kutijaVAO
+    glDeleteVertexArrays(1, &kutijaVAO);
     glDeleteVertexArrays(1, &poklopacVAO);
     glDeleteBuffers(1, &VBO1);
     glDeleteBuffers(1, &VBO2);
@@ -359,13 +390,12 @@ int main(){
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
+void processInput(GLFWwindow *window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     // pomeranje kamere pomocu tastature
-    float speed = 2.5 * deltaTime;
+    //float speed = 2.5 * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -378,16 +408,14 @@ void processInput(GLFWwindow *window)
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos){
-    if (firstMouse)
-    {
+    if (firstMouse){
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
@@ -403,4 +431,46 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     camera.ProcessMouseScroll(yoffset);
+}
+
+unsigned int loadTexture(char const * path){
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data){
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+        else{
+            cerr << "Error!" << endl;
+            exit(EXIT_FAILURE);
+        }
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else{
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+    if (key == GLFW_KEY_P && action == GLFW_PRESS)
+        flag = -flag;
 }
