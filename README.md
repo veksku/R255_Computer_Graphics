@@ -3,29 +3,6 @@
 __________________________________________________________________________________________________________________________________
 TODO: Sve
 
-05
--Colors: scena sa svetlom
-
--Basic lighting: ambijentalno, difuzno, spekularno
-
--Materials: postavljanje materijala, svojstva svetla, različite boje svetla
-
-06
--Ligthing maps: difuzne, spekularne
-
--Light casters: direkciono, tačkasto, koncentrisano
-
--Multiple lights: direkciono, tačkasto
-
-07
--Assimp: instalacija i korišćenje biblioteke
-
--Mesh: modeli i optimizacije
-
--Modeli: formati i učitavanje modela
-
--Blender: kako konvertovati bilo koji model u Blenderu tako da radi sa trenutnom implementacijom učitavanja modela
-
 08
 -Model i osvetljenje
 
