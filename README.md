@@ -41,7 +41,7 @@ TODO: Bar jedna od ponudjenih
 -Anti Aliasing: multisampling, MSAA, Off-screen MSAA
 
 __________________________________________________________________________________________________________________________________
-TODO: Bar jedna od ponudjenih iz 11 ili 12
+TODO: Bar jedna od ponudjenih
 
 11
 -Advanced Lighting: Blinn-Phong
@@ -64,4 +64,3 @@ TODO: Bar jedna od ponudjenih iz 11 ili 12
 -Deffered Shading: G-bafer
 
 -SSAO:
-__________________________________________________________________________________________________________________________________
