@@ -25,7 +25,7 @@ unsigned int loadTexture(const char *path);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 7.0f));;
+Camera camera(glm::vec3(1.0f, 0.0f, 6.5f));;
 
 bool firstMouse = true;
 float lastX =  SCR_WIDTH / 2.0f;
@@ -87,7 +87,8 @@ int main(){
     Shader lightingShader("resources/shaders/all_lights.vs", "resources/shaders/all_lights.fs");
     Shader flashlightShader("resources/shaders/flashlight.vs", "resources/shaders/flashlight.fs");
 
-    Model ourModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
+    Model flashlightModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
+    Model valjakModel = (FileSystem::getPath("resources/objects/valjak/valjak.obj"));
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices1[] = {
@@ -212,9 +213,18 @@ int main(){
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO2);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-
-    glBindVertexArray(poklopacVAO);
-
+//
+//    glBindVertexArray(poklopacVAO);
+//    unsigned int poklopacVAO;
+//    glGenVertexArrays(1, &poklopacVAO);
+//
+//    glGenBuffers(1, &VBO1);
+//    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+//
+//    glBindVertexArray(poklopacVAO);
+//
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
@@ -264,8 +274,8 @@ int main(){
 //        lightingShader.setVec3("light.position", lightPos);
 
         lightingShader.setVec3("viewPos", camera.Position);
-        lightingShader.setFloat("material.shininess", 4.0f);
-        lightingShader.setVec3("dirlight.direction", glm::vec3(0.1f, -0.25, -0.4f));
+        lightingShader.setFloat("material.shininess", 8.0f);
+        lightingShader.setVec3("dirlight.direction", glm::vec3(1.3f, -1.25, -0.4f));
 
 // dirlight properties
         lightingShader.setVec3("dirlight.ambient", 0.2f, 0.2f, 0.2f);
@@ -273,9 +283,9 @@ int main(){
         lightingShader.setVec3("dirlight.specular", 1.0f, 1.0f, 1.0f);
 
 // pointlight properties
-        lightingShader.setVec3("pointlight.position", flashlightPos+glm::vec3(1.3*cos(currentTime)-0.2, 0.0f, 1.3*sin(currentTime)-0.131));
+        lightingShader.setVec3("pointlight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
         lightingShader.setVec3("pointlight.ambient", 0.05f, 0.05f, 0.05f);
-        lightingShader.setVec3("pointlight.diffuse", 0.8f, 0.8f, 0.8f);
+        lightingShader.setVec3("pointlight.diffuse", 0.9f, 0.9f, 0.9f);
         lightingShader.setVec3("pointlight.specular", 1.0f, 1.0f, 1.0f);
         lightingShader.setFloat("pointlight.constant", 1.0f);
         lightingShader.setFloat("pointlight.linear", 0.09);
@@ -320,24 +330,18 @@ int main(){
         lightingShader.setMat4("model", model);
 
         glBindVertexArray(kutijaVAO);
-
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // render poklopca
-
-
-        lightingShader.setMat4("projection", projection);
-        lightingShader.setMat4("view", view);
-
-        glm::mat4 model2 = glm::mat4(1.0f);
-        model2 = glm::rotate(model2, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
-        model2 = glm::translate(model2, poklopacPos);
+        model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
+        model = glm::translate(model, poklopacPos);
         //model = glm::rotate(model, (float)1, glm::vec3(0.0f, 0.0f, 3.0f)); //open model coords
         //model = glm::translate(model, poklopacOpenPos); // open model coords
-        lightingShader.setMat4("model", model2);
+        lightingShader.setMat4("model", model);
 
         glBindVertexArray(poklopacVAO);
-//        glDrawArrays(GL_TRIANGLES, 0, 30);
+        glDrawArrays(GL_TRIANGLES, 0, 30);
 
         //render svetlosne kutije
         flashlightShader.use();
@@ -345,13 +349,14 @@ int main(){
         flashlightShader.setMat4("view", view);
         model = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
-        model = glm::translate(model, glm::vec3(1.3*cos(currentTime)-0.2, 0.0f, 1.3*sin(currentTime)-0.131));
-        model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
-        model = glm::scale(model, glm::vec3(0.12f)); // a smaller cube
+        model = glm::translate(model, glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
+        model = glm::rotate(model, (float)4.12, glm::vec3(0.0f, 1.0f, 0.0));
+        model = glm::scale(model, glm::vec3(0.019f)); // a smaller cube
         flashlightShader.setMat4("model", model);
-
-        glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 30);
+//
+//        glBindVertexArray(lightCubeVAO);
+//        glDrawArrays(GL_TRIANGLES, 0, 30);
+        valjakModel.Draw(flashlightShader);
         //        glBindVertexArray(poklopacVAO);
         //        glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -363,13 +368,13 @@ int main(){
         lightingShader.use();
         model = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
-        model = glm::translate(model, glm::vec3(1.3*cos(currentTime), 0.0f, 1.3*sin(currentTime)));
+        model = glm::translate(model, glm::vec3(1.5*cos(currentTime), 0.0f, 1.5*sin(currentTime)));
         model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
         model = glm::scale(model, glm::vec3(.1f));
         lightingShader.setMat4("model", model);
 
         //glDrawArrays(GL_TRIANGLES, 0, 36);
-        ourModel.Draw(lightingShader);
+        flashlightModel.Draw(lightingShader);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -383,7 +388,7 @@ int main(){
     glDeleteVertexArrays(1, &kutijaVAO);
     glDeleteVertexArrays(1, &poklopacVAO);
     glDeleteBuffers(1, &VBO1);
-    glDeleteBuffers(1, &VBO2);
+//    glDeleteBuffers(1, &VBO2);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
