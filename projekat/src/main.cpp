@@ -20,12 +20,13 @@ void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadTexture(const char *path);
+unsigned int loadCubemap(vector<std::string> faces);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(1.0f, 0.0f, 6.5f));;
+Camera camera(glm::vec3(1.0f, 0.0f, 1.0f));;
 
 bool firstMouse = true;
 float lastX =  SCR_WIDTH / 2.0f;
@@ -71,8 +72,8 @@ int main(){
     glfwSetScrollCallback(window, scroll_callback);
 
     // komanda glfwu da prati misa
-     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
-//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
+    //    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
@@ -83,107 +84,118 @@ int main(){
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
+    //    glDepthFunc(GL_LESS);
 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+
+    Shader cubemapsShader("resources/shaders/cubemaps.vs", "resources/shaders/cubemaps.fs");
+    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader lightingShader("resources/shaders/all_lights.vs", "resources/shaders/all_lights.fs");
     Shader flashlightShader("resources/shaders/flashlight.vs", "resources/shaders/flashlight.fs");
+    Shader cardboardShader("resources/shaders/cardboard.vs", "resources/shaders/cardboard.fs");
 
     Model flashlightModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
     Model valjakModel = (FileSystem::getPath("resources/objects/valjak/valjak.obj"));
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices1[] = {
+    //    glFrontFace(GL_CW);
+    float vertices[] = {
+            //back
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
             -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-
+            //front
             -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+            0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+            0.5f,  -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-
+            -0.5f,  -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+            -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+            //left
             -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
             -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
             -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+            //right
             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-
+            //down
             -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+            0.5f, -0.5f, 0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            0.5f, -0.5f,  -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-
-            //nema gore
-            -0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-            0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-            0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-            0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-            -0.50f,  0.5f,  0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-            -0.50f,  0.5f, -0.50f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
+            -0.5f, -0.5f,  -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+            -0.5f, -0.5f, 0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
+            //up
+            -0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+            0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+            0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
+            -0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
     };
+    float skyboxVertices[] = {
+            // positions
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-    float vertices2[] = {
-            -0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-             0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
-             0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.294f,
-             0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 1.0f, 0.294f,
-            -0.53f,  0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.294f,
-            -0.53f, -0.1f, -0.53f, 0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-            -0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-             0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-             0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.294f,
-             0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 1.0f, 0.294f,
-            -0.53f,  0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.294f,
-            -0.53f, -0.1f,  0.53f, 0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
 
-            -0.53f,  0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.294f,
-            -0.53f,  0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.294f,
-            -0.53f, -0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.0f,
-            -0.53f, -0.1f, -0.53f, -1.0f,  0.0f, 0.0f, 0.0f, 0.0f,
-            -0.53f, -0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.0f,
-            -0.53f,  0.1f,  0.53f, -1.0f,  0.0f, 0.0f, 1.0f, 0.294f,
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
 
-             0.53f,  0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.294f,
-             0.53f,  0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.294f,
-             0.53f, -0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-             0.53f, -0.1f, -0.53f, 1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-             0.53f, -0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-             0.53f,  0.1f,  0.53f, 1.0f,  0.0f,  0.0f, 1.0f, 0.294f,
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
 
-            //nema dole
-
-            //duz     vis    sir
-            -0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-             0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-             0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-             0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-            -0.53f,  0.1f,  0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-            -0.53f,  0.1f, -0.53f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f
     };
-
     //_______________________________________
-    //crtanje kutije
+    //vertexi za spoljasnjost kutije
     unsigned int VBO1, kutijaVAO;
     glGenVertexArrays(1, &kutijaVAO);
     glGenBuffers(1, &VBO1);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glBindVertexArray(kutijaVAO);
 
@@ -194,60 +206,59 @@ int main(){
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    //_______________________________________
-    // crtanje kutije izvora svetlosti
-    unsigned int lightCubeVAO;
-    glGenVertexArrays(1, &lightCubeVAO);
-    glBindVertexArray(lightCubeVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-
-    //_______________________________________
-    //crtanje poklopca
-    unsigned int VBO2, poklopacVAO;
-    glGenVertexArrays(1, &poklopacVAO);
+    //vertexi za unutrasnjost, koristi se isti vertex buffer object
+    unsigned int VBO2, unutrasnjostVAO;
+    glGenVertexArrays(1, &unutrasnjostVAO);
     glGenBuffers(1, &VBO2);
 
+    glBindVertexArray(unutrasnjostVAO);
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-//
-//    glBindVertexArray(poklopacVAO);
-//    unsigned int poklopacVAO;
-//    glGenVertexArrays(1, &poklopacVAO);
-//
-//    glGenBuffers(1, &VBO1);
-//    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-//
-//    glBindVertexArray(poklopacVAO);
-//
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
-    //_______________________________________
+
+    // skybox VAO
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
 
     unsigned int texture1diffuse = loadTexture("resources/textures/gift.jpg"); //diffuse 1
     unsigned int texture2diffuse = loadTexture("resources/textures/glue.jpg"); //diffuse 2
+    unsigned int texture3 = loadTexture("resources/textures/cardboard.jpg");
+
+    vector<std::string> faces{
+        FileSystem::getPath("resources/textures/skybox/right.png"),
+        FileSystem::getPath("resources/textures/skybox/left.png"),
+        FileSystem::getPath("resources/textures/skybox/top.png"),
+        FileSystem::getPath("resources/textures/skybox/bottom.png"),
+        FileSystem::getPath("resources/textures/skybox/front.png"),
+        FileSystem::getPath("resources/textures/skybox/back.png"),
+        };
+    unsigned int cubemapTexture = loadCubemap(faces);
+
+
 
     lightingShader.use();
     lightingShader.setInt("material.texture1diffuse",0);
     lightingShader.setInt("material.texture2diffuse", 1);
+    //    cardboardShader.use();
+    //    cardboardShader.setInt("texture3", 0);
 
-
-
-    // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-    // -------------------------------------------------------------------------------------------
-//    shader.use();
-//    shader.setInt("texture1", 0);
-//    shader.setInt("texture2", 1);
-
+    cubemapsShader.use();
+    cubemapsShader.setInt("skybox", 0);
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -263,6 +274,10 @@ int main(){
         // ------
         glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+
+
         float time = glfwGetTime();
         //racunanje vrednosti vremena da bi stisak tastera P mogao da stimulira pauziranje lampe
         if (flag == 1)
@@ -271,100 +286,63 @@ int main(){
             timeDiff = time - currentTime;
 
         lightingShader.use();
-//        lightingShader.setVec3("light.position", lightPos);
 
         lightingShader.setVec3("viewPos", camera.Position);
         lightingShader.setFloat("material.shininess", 8.0f);
-        lightingShader.setVec3("dirlight.direction", glm::vec3(1.3f, -1.25, -0.4f));
+        lightingShader.setVec3("dirLight.direction", glm::vec3(1.3f, -1.25, -0.4f));
 
-// dirlight properties
-        lightingShader.setVec3("dirlight.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("dirlight.diffuse", 0.5f, 0.5f, 0.5f);
-        lightingShader.setVec3("dirlight.specular", 1.0f, 1.0f, 1.0f);
+        // dirlight properties
+        lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("dirLight.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
-// pointlight properties
-        lightingShader.setVec3("pointlight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
-        lightingShader.setVec3("pointlight.ambient", 0.05f, 0.05f, 0.05f);
-        lightingShader.setVec3("pointlight.diffuse", 0.9f, 0.9f, 0.9f);
-        lightingShader.setVec3("pointlight.specular", 1.0f, 1.0f, 1.0f);
-        lightingShader.setFloat("pointlight.constant", 1.0f);
-        lightingShader.setFloat("pointlight.linear", 0.09);
-        lightingShader.setFloat("pointlight.quadratic", 0.032);
-
-        // material properties
-        //lightingShader.setFloat("material.shininess", 64.0f);
+        // pointlight properties
+        lightingShader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
+        lightingShader.setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
+        lightingShader.setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
+        lightingShader.setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setFloat("pointLight.constant", 1.0f);
+        lightingShader.setFloat("pointLight.linear", 0.09);
+        lightingShader.setFloat("pointLight.quadratic", 0.032);
 
 
-        // bind textures on corresponding texture units
-//        glActiveTexture(GL_TEXTURE0);
-//        glBindTexture(GL_TEXTURE_2D, texture1);
-//        glActiveTexture(GL_TEXTURE1);
-//        glBindTexture(GL_TEXTURE_2D, texture2);
-
-        // activate shader
-//        shader.use();
-//        shader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-//        shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-//        shader.setVec3("lightPos", lightPos);
-
-//        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-//        shader.setMat4("projection", projection);
-//
-//        // camera/view transformation
-//        glm::mat4 view = camera.GetViewMatrix();
-//        shader.setMat4("view", view);
-
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.GetViewMatrix();
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
-
+        // render spoljasnjosti kutije
+        glCullFace(GL_FRONT);
+        glBindVertexArray(kutijaVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1diffuse);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2diffuse);
-
-        // render kutije
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
         lightingShader.setMat4("model", model);
-
         glBindVertexArray(kutijaVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
 
-        // render poklopca
-        model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f)); //open model coords
-        model = glm::translate(model, poklopacPos);
-        //model = glm::rotate(model, (float)1, glm::vec3(0.0f, 0.0f, 3.0f)); //open model coords
-        //model = glm::translate(model, poklopacOpenPos); // open model coords
-        lightingShader.setMat4("model", model);
+        // TODO: render unutrasnjosti kutije
+        glCullFace(GL_BACK);
 
-        glBindVertexArray(poklopacVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 30);
 
-        //render svetlosne kutije
+
+
+        //render svetla iz lampe
         flashlightShader.use();
         flashlightShader.setMat4("projection", projection);
         flashlightShader.setMat4("view", view);
         model = glm::mat4(1.0f);
+        view = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
         model = glm::translate(model, glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
         model = glm::rotate(model, (float)4.12, glm::vec3(0.0f, 1.0f, 0.0));
         model = glm::scale(model, glm::vec3(0.019f)); // a smaller cube
         flashlightShader.setMat4("model", model);
-//
-//        glBindVertexArray(lightCubeVAO);
-//        glDrawArrays(GL_TRIANGLES, 0, 30);
         valjakModel.Draw(flashlightShader);
-        //        glBindVertexArray(poklopacVAO);
-        //        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-
-//        flashlightShader.use();
-//        flashlightShader.setMat4("projection", projection);
-//        flashlightShader.setMat4("view", view);
-//        glDisable(GL_TEXTURE_2D);
+        // render modela lampe
+        glDisable(GL_CULL_FACE);
         lightingShader.use();
         model = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
@@ -372,11 +350,21 @@ int main(){
         model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
         model = glm::scale(model, glm::vec3(.1f));
         lightingShader.setMat4("model", model);
-
-        //glDrawArrays(GL_TRIANGLES, 0, 36);
         flashlightModel.Draw(lightingShader);
+        glEnable(GL_CULL_FACE);
 
-
+        //skybox draw
+        glDepthMask(GL_FALSE);
+        glDepthFunc(GL_LEQUAL);
+        skyboxShader.use();
+        skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));
+        skyboxShader.setMat4("projection", projection);
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LESS);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -386,9 +374,11 @@ int main(){
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &kutijaVAO);
-    glDeleteVertexArrays(1, &poklopacVAO);
+    glDeleteVertexArrays(1, &unutrasnjostVAO);
+    glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &VBO1);
-//    glDeleteBuffers(1, &VBO2);
+    glDeleteBuffers(1, &VBO2);
+    glDeleteBuffers(1, &skyboxVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -403,7 +393,6 @@ void processInput(GLFWwindow *window){
         glfwSetWindowShouldClose(window, true);
 
     // pomeranje kamere pomocu tastature
-    //float speed = 2.5 * deltaTime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -481,4 +470,33 @@ unsigned int loadTexture(char const * path){
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
         flag = -flag;
+}
+
+unsigned int loadCubemap(vector<std::string> faces){
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrComponents;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
