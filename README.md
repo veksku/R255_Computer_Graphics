@@ -1,38 +1,4 @@
 # R255_Computer_Graphics
-
-__________________________________________________________________________________________________________________________________
-TODO: Sve
-
-05
--Colors: scena sa svetlom
-
--Basic lighting: ambijentalno, difuzno, spekularno
-
--Materials: postavljanje materijala, svojstva svetla, različite boje svetla
-
-06
--Ligthing maps: difuzne, spekularne
-
--Light casters: direkciono, tačkasto, koncentrisano
-
--Multiple lights: direkciono, tačkasto
-
-07
--Assimp: instalacija i korišćenje biblioteke
-
--Mesh: modeli i optimizacije
-
--Modeli: formati i učitavanje modela
-
--Blender: kako konvertovati bilo koji model u Blenderu tako da radi sa trenutnom implementacijom učitavanja modela
-
-08
--Model i osvetljenje
-
--ImGui: GUI biblioteka
-
--Text Rendering: prikazivanje teksta
-
 __________________________________________________________________________________________________________________________________
 TODO: Bar jedna od ponudjenih
 
@@ -64,7 +30,7 @@ TODO: Bar jedna od ponudjenih
 -Anti Aliasing: multisampling, MSAA, Off-screen MSAA
 
 __________________________________________________________________________________________________________________________________
-TODO: Bar jedna od ponudjenih iz 11 ili 12
+TODO: Bar jedna od ponudjenih
 
 11
 -Advanced Lighting: Blinn-Phong
@@ -87,4 +53,4 @@ TODO: Bar jedna od ponudjenih iz 11 ili 12
 -Deffered Shading: G-bafer
 
 -SSAO:
-__________________________________________________________________________________________________________________________________
+
