@@ -53,4 +53,7 @@ TODO: Bar jedna od ponudjenih
 -Deffered Shading: G-bafer
 
 -SSAO:
+<<<<<<< HEAD
 
+=======
+>>>>>>> 02fdae3a7456312dd780c2aa735c9e37d730ac62
