@@ -2,36 +2,6 @@
 __________________________________________________________________________________________________________________________________
 TODO: Bar jedna od ponudjenih
 
-09
--Depth testing: Bafer dubine, funkcija testiranja dubine, preciznost vrednosti dubine, vizuelizacija bafera dubine, z-bafer
-
--Stencil testing: odbacivanje fragmenata, stencil funkcije, ivičenje objekata
-
--Blending: providnost, odbacivanje fragmenata, utapanje, prikaz polu-providnih tekstura
-
--Face culling: winding number, odsecanja
-
--Framebuffers: kreiranje, renderovanje na teksturu, post-procesiranje, kernel efekti
-
-__________________________________________________________________________________________________________________________________
-TODO: Bar jedna od ponudjenih
-
-10
--Cubemaps: kreiranje, skybox, mapiranje okruženja, dinamične mape okruženja
-
--Advanced Data: vertex atributi, baferi
-
--Advanced GLSL: GLSL promenljive, interfejsi blokovi, uniform bafer objekti
-
--Geometry Shader: korišćenje, eksplodirajući objekti
-
--Instancing: primer (polje asterioda)
-
--Anti Aliasing: multisampling, MSAA, Off-screen MSAA
-
-__________________________________________________________________________________________________________________________________
-TODO: Bar jedna od ponudjenih
-
 11
 -Advanced Lighting: Blinn-Phong
 
@@ -53,7 +23,3 @@ TODO: Bar jedna od ponudjenih
 -Deffered Shading: G-bafer
 
 -SSAO:
-<<<<<<< HEAD
-
-=======
->>>>>>> 02fdae3a7456312dd780c2aa735c9e37d730ac62
