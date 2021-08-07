@@ -1,25 +1,10 @@
 # R255_Computer_Graphics
 __________________________________________________________________________________________________________________________________
-TODO: Bar jedna od ponudjenih
-
-11
--Advanced Lighting: Blinn-Phong
-
--Gamm Correction: sRGB teksture
-
--Shadow mapping: mapa senki, mapa dubine, renderovanje senki, PCF
-
--Point shadows: omnidirekcione mape senki, PCF
-
--Normal mapping: mapiranje normala, tangenti prostori, kompleksni objekti
-
-12
--Parallax Mapping: paralaks mapiranje, koso paralaks mapiranje, paralaks absorbovanje
-
--HDR: Floating point buffers, Tone mapping, Exposure
-
--Bloom: ekstrakovanje blještavih boja, Gausov blur, blending
-
--Deffered Shading: G-bafer
-
--SSAO:
+Projekat sadrzi:
+-Model poklona nacrtan preko koordinata kocke i koji ima difuznu i spekularnu teksturu
+-Kamera koja moze da se pomera (na VM gde nije integrisan kursor misa promeniti GL_CURSOR_DISABLED na GL_CURSOR_HIDDEN ili GL_CURSOR_NORMAL jer moze da se desi da baguje)
+-Model klasa lampe koja se vrti u krug
+-Tackasti izvor svetlosti (gore pomenuta lampa) i direkcioni izvor svetlosti
+-Face culling, poklon ima unutrasnju teksturu i spoljasnju teksturu
+-Skybox svemir pozadina
+-Advanced lighting, implementiran Blinn-Phong model svetlosti
