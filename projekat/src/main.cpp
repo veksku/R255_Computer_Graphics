@@ -93,7 +93,7 @@ int main(){
     Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader lightingShader("resources/shaders/all_lights.vs", "resources/shaders/all_lights.fs");
     Shader flashlightShader("resources/shaders/flashlight.vs", "resources/shaders/flashlight.fs");
-    Shader cardboardShader("resources/shaders/cardboard.vs", "resources/shaders/cardboard.fs");
+//    Shader cardboardShader("resources/shaders/cardboard.vs", "resources/shaders/cardboard.fs");
 
     Model flashlightModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
     Model valjakModel = (FileSystem::getPath("resources/objects/valjak/valjak.obj"));
@@ -205,16 +205,12 @@ int main(){
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+    //
+    unsigned int insideVAO;
+    glGenVertexArrays(1, &insideVAO);
+    glBindVertexArray(insideVAO);
 
-    //vertexi za unutrasnjost, koristi se isti vertex buffer object
-    unsigned int VBO2, unutrasnjostVAO;
-    glGenVertexArrays(1, &unutrasnjostVAO);
-    glGenBuffers(1, &VBO2);
-
-    glBindVertexArray(unutrasnjostVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
@@ -256,7 +252,7 @@ int main(){
     //    cardboardShader.setInt("texture3", 0);
 
     cubemapsShader.use();
-    cubemapsShader.setInt("skybox", 0);
+    cubemapsShader.setInt("texture1diffuse", 0);
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
     // render loop
@@ -293,7 +289,7 @@ int main(){
 
         // dirlight properties
         lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("dirLight.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
         lightingShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
         // pointlight properties
@@ -322,9 +318,37 @@ int main(){
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
+//        updateShaderValues(lightingShader);
         // TODO: render unutrasnjosti kutije
         glCullFace(GL_BACK);
+        lightingShader.setVec3("viewPos", camera.Position);
+        lightingShader.setFloat("material.shininess", 8.0f);
+        lightingShader.setVec3("dirLight.direction", glm::vec3(1.3f, -1.25, -0.4f));
 
+        // dirlight properties
+        lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
+        lightingShader.setVec3("dirLight.specular", 0.0f, 0.0f, 0.0f);
+
+        // pointlight properties
+        lightingShader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
+        lightingShader.setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
+        lightingShader.setVec3("pointLight.diffuse", 0.0f, 0.0f, 0.0f);
+        lightingShader.setVec3("pointLight.specular", 0.0f, 0.0f, 0.0f);
+        lightingShader.setFloat("pointLight.constant", 1.0f);
+        lightingShader.setFloat("pointLight.linear", 0.09);
+        lightingShader.setFloat("pointLight.quadratic", 0.032);
+        model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+        lightingShader.setMat4("model", model);
+        glBindVertexArray(insideVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture3);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture3);
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
 
 
 
@@ -354,6 +378,7 @@ int main(){
         glEnable(GL_CULL_FACE);
 
         //skybox draw
+        glCullFace(GL_BACK); //mozda nepotrebno ubuduce
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
         skyboxShader.use();
@@ -374,10 +399,8 @@ int main(){
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &kutijaVAO);
-    glDeleteVertexArrays(1, &unutrasnjostVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &VBO1);
-    glDeleteBuffers(1, &VBO2);
     glDeleteBuffers(1, &skyboxVBO);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
