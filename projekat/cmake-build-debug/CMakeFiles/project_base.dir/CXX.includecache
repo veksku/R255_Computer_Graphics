@@ -110,12 +110,6 @@ iostream
 common.h
 -
 
-../include/rg/Error.h
-iostream
--
-glad/glad.h
--
-
 ../include/stb_image.h
 stb_image.h
 ../include/stb_image.h
@@ -169,13 +163,9 @@ glm/glm.hpp
 -
 glm/gtc/matrix_transform.hpp
 -
-glm/gtc/type_ptr.hpp
--
 learnopengl/filesystem.h
 -
 learnopengl/shader_m.h
--
-rg/Error.h
 -
 learnopengl/camera.h
 -

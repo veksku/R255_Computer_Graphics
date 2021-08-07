@@ -1,3 +1,6 @@
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -5,11 +8,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader_m.h>
-#include <rg/Error.h>
 #include <learnopengl/camera.h>
 #include <learnopengl/model.h>
 #include <iostream>
@@ -21,33 +22,29 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadTexture(const char *path);
 unsigned int loadCubemap(vector<std::string> faces);
+void updateShaderValues(Shader shader);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(1.0f, 0.0f, 1.0f));;
+Camera camera(glm::vec3(1.0f, 0.6f, 5.0f));
 
 bool firstMouse = true;
 float lastX =  SCR_WIDTH / 2.0f;
 float lastY =  SCR_HEIGHT / 2.0f;
 
-float deltaTime = 0.0f;	// time between current frame and last frame
-float lastFrame = 0.0f;
+double deltaTime = 0.0f;
+double lastFrame = 0.0f;
 
-float currentTime = glfwGetTime();
-float timeDiff = 0.0f;
-int flag = 1;
+double currentTime = glfwGetTime();
+double timeDiff = 0.0;
+bool shouldPause = true;
+bool enablePointLight = true;
 
-//pozicija poklopca
-glm::vec3 poklopacPos(0.0f, 0.43f, 0.0f);
-
-//lightcube
 glm::vec3 flashlightPos(2.0f, 0.1f, 1.3f);
 
 int main(){
-    // glfw: initialize and configure
-    // ------------------------------
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -57,8 +54,6 @@ int main(){
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // glfw window creation
-    // --------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", nullptr, nullptr);
     if (window == nullptr){
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -71,50 +66,44 @@ int main(){
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // komanda glfwu da prati misa
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //disabled ubagovan, ukljuci mouse integration
-    //    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
     // glad: load all OpenGL function pointers
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
     // configure global opengl state
-    // -----------------------------
     glEnable(GL_DEPTH_TEST);
-    //    glDepthFunc(GL_LESS);
 
+    //ukljucen face culling
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
 
-    Shader cubemapsShader("resources/shaders/cubemaps.vs", "resources/shaders/cubemaps.fs");
-    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
     Shader lightingShader("resources/shaders/all_lights.vs", "resources/shaders/all_lights.fs");
     Shader flashlightShader("resources/shaders/flashlight.vs", "resources/shaders/flashlight.fs");
-//    Shader cardboardShader("resources/shaders/cardboard.vs", "resources/shaders/cardboard.fs");
+    Shader skyboxShader("resources/shaders/skybox.vs", "resources/shaders/skybox.fs");
 
     Model flashlightModel = (FileSystem::getPath("resources/objects/flashlight/Linterna.obj"));
-    Model valjakModel = (FileSystem::getPath("resources/objects/valjak/valjak.obj"));
-    // set up vertex data (and buffer(s)) and configure vertex attributes
-    // ------------------------------------------------------------------
-    //    glFrontFace(GL_CW);
+    Model lightSourceModel = (FileSystem::getPath("resources/objects/valjak/valjak.obj"));
+
     float vertices[] = {
             //back
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
             -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
             //front
             -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-            0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-            0.5f,  -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
-            -0.5f,  -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
-            -0.5f, 0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f,
             //left
             -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
             -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
@@ -123,24 +112,24 @@ int main(){
             -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
             -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
             //right
-            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
             //down
             -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            0.5f, -0.5f,  -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+             0.5f, -0.5f,  -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
             -0.5f, -0.5f,  -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
             -0.5f, -0.5f, 0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
             //up
             -0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+             0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
             -0.5f,  0.5f,  0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
             -0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
     };
@@ -148,9 +137,9 @@ int main(){
             // positions
             -1.0f,  1.0f, -1.0f,
             -1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f,  1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f,  1.0f, -1.0f,
             -1.0f,  1.0f, -1.0f,
 
             -1.0f, -1.0f,  1.0f,
@@ -160,35 +149,34 @@ int main(){
             -1.0f,  1.0f,  1.0f,
             -1.0f, -1.0f,  1.0f,
 
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
 
             -1.0f, -1.0f,  1.0f,
             -1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f, -1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f, -1.0f,  1.0f,
             -1.0f, -1.0f,  1.0f,
 
             -1.0f,  1.0f, -1.0f,
-            1.0f,  1.0f, -1.0f,
-            1.0f,  1.0f,  1.0f,
-            1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f, -1.0f,
+             1.0f,  1.0f,  1.0f,
+             1.0f,  1.0f,  1.0f,
             -1.0f,  1.0f,  1.0f,
             -1.0f,  1.0f, -1.0f,
 
             -1.0f, -1.0f, -1.0f,
             -1.0f, -1.0f,  1.0f,
-            1.0f, -1.0f, -1.0f,
-            1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
+             1.0f, -1.0f, -1.0f,
             -1.0f, -1.0f,  1.0f,
-            1.0f, -1.0f,  1.0f
+             1.0f, -1.0f,  1.0f
     };
-    //_______________________________________
     //vertexi za spoljasnjost kutije
     unsigned int VBO1, kutijaVAO;
     glGenVertexArrays(1, &kutijaVAO);
@@ -198,19 +186,20 @@ int main(){
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glBindVertexArray(kutijaVAO);
-
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
-    //
-    unsigned int insideVAO;
-    glGenVertexArrays(1, &insideVAO);
-    glBindVertexArray(insideVAO);
+
+    //unutrasnjost kutije
+    unsigned int unutrasnjostVAO;
+    glGenVertexArrays(1, &unutrasnjostVAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO1);
+
+    glBindVertexArray(unutrasnjostVAO);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
@@ -218,7 +207,7 @@ int main(){
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // skybox VAO
+    //skybox
     unsigned int skyboxVAO, skyboxVBO;
     glGenVertexArrays(1, &skyboxVAO);
     glGenBuffers(1, &skyboxVBO);
@@ -226,12 +215,12 @@ int main(){
     glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 
+    unsigned int diffuseTexture = loadTexture("resources/textures/gift.jpg");
+    unsigned int specularTexture = loadTexture("resources/textures/glue.jpg");
 
-    unsigned int texture1diffuse = loadTexture("resources/textures/gift.jpg"); //diffuse 1
-    unsigned int texture2diffuse = loadTexture("resources/textures/glue.jpg"); //diffuse 2
-    unsigned int texture3 = loadTexture("resources/textures/cardboard.jpg");
+    unsigned int cardboardTexture = loadTexture("resources/textures/cardboard.jpg");
 
     vector<std::string> faces{
         FileSystem::getPath("resources/textures/skybox/right.png"),
@@ -243,40 +232,32 @@ int main(){
         };
     unsigned int cubemapTexture = loadCubemap(faces);
 
-
-
     lightingShader.use();
-    lightingShader.setInt("material.texture1diffuse",0);
-    lightingShader.setInt("material.texture2diffuse", 1);
-    //    cardboardShader.use();
-    //    cardboardShader.setInt("texture3", 0);
+    lightingShader.setInt("material.diffuse",0);
+    lightingShader.setInt("material.specular", 1);
 
-    cubemapsShader.use();
-    cubemapsShader.setInt("texture1diffuse", 0);
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        float currentFrame = glfwGetTime();
+        double currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-        // input
-        // -----
+
         processInput(window);
 
-        // render
-        // ------
+        //render
         glClearColor(0.5f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
-
-        float time = glfwGetTime();
         //racunanje vrednosti vremena da bi stisak tastera P mogao da stimulira pauziranje lampe
-        if (flag == 1)
+        double time = glfwGetTime();
+        if (shouldPause == 1)
             currentTime = time - timeDiff;
         else
             timeDiff = time - currentTime;
@@ -284,33 +265,33 @@ int main(){
         lightingShader.use();
 
         lightingShader.setVec3("viewPos", camera.Position);
-        lightingShader.setFloat("material.shininess", 8.0f);
-        lightingShader.setVec3("dirLight.direction", glm::vec3(1.3f, -1.25, -0.4f));
+        lightingShader.setFloat("material.shininess", 128.0f);
+        lightingShader.setVec3("dirLight.direction", glm::vec3(0.2f, -1.25, -0.4f));
 
-        // dirlight properties
         lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
+        lightingShader.setVec3("dirLight.diffuse", 0.6f, 0.6f, 0.6f);
         lightingShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
 
-        // pointlight properties
-        lightingShader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
-        lightingShader.setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
-        lightingShader.setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
-        lightingShader.setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
-        lightingShader.setFloat("pointLight.constant", 1.0f);
-        lightingShader.setFloat("pointLight.linear", 0.09);
-        lightingShader.setFloat("pointLight.quadratic", 0.032);
-
-
+        //pointlight ukljucujemo i iskljucujemo preko SPACE tastera menjanjem promenljive enablePointLight
+        if(enablePointLight){
+            lightingShader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.3*cos(currentTime)-0.1, 0.0f, 1.3*sin(currentTime)-0.065));
+            lightingShader.setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
+            lightingShader.setVec3("pointLight.diffuse", 0.8f, 0.8f, 0.8f);
+            lightingShader.setVec3("pointLight.specular", 1.0f, 1.0f, 1.0f);
+            lightingShader.setFloat("pointLight.constant", 1.0f);
+            lightingShader.setFloat("pointLight.linear", 0.09);
+            lightingShader.setFloat("pointLight.quadratic", 0.032);
+        }
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
-        // render spoljasnjosti kutije
+
+        //spoljasnjost kutije
         glCullFace(GL_FRONT);
         glBindVertexArray(kutijaVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1diffuse);
+        glBindTexture(GL_TEXTURE_2D, diffuseTexture);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2diffuse);
+        glBindTexture(GL_TEXTURE_2D, specularTexture);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
         lightingShader.setMat4("model", model);
@@ -318,99 +299,74 @@ int main(){
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
-//        updateShaderValues(lightingShader);
-        // TODO: render unutrasnjosti kutije
-        glCullFace(GL_BACK);
-        lightingShader.setVec3("viewPos", camera.Position);
-        lightingShader.setFloat("material.shininess", 8.0f);
-        lightingShader.setVec3("dirLight.direction", glm::vec3(1.3f, -1.25, -0.4f));
-
-        // dirlight properties
-        lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
-        lightingShader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
-        lightingShader.setVec3("dirLight.specular", 0.0f, 0.0f, 0.0f);
-
-        // pointlight properties
-        lightingShader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
-        lightingShader.setVec3("pointLight.ambient", 0.05f, 0.05f, 0.05f);
-        lightingShader.setVec3("pointLight.diffuse", 0.0f, 0.0f, 0.0f);
-        lightingShader.setVec3("pointLight.specular", 0.0f, 0.0f, 0.0f);
-        lightingShader.setFloat("pointLight.constant", 1.0f);
-        lightingShader.setFloat("pointLight.linear", 0.09);
-        lightingShader.setFloat("pointLight.quadratic", 0.032);
-        model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-        lightingShader.setMat4("model", model);
-        glBindVertexArray(insideVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture3);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture3);
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
-
-
-
-        //render svetla iz lampe
-        flashlightShader.use();
-        flashlightShader.setMat4("projection", projection);
-        flashlightShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
-        view = glm::mat4(1.0f);
-        model = glm::translate(model, flashlightPos);
-        model = glm::translate(model, glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
-        model = glm::rotate(model, (float)4.12, glm::vec3(0.0f, 1.0f, 0.0));
-        model = glm::scale(model, glm::vec3(0.019f)); // a smaller cube
-        flashlightShader.setMat4("model", model);
-        valjakModel.Draw(flashlightShader);
-
         // render modela lampe
         glDisable(GL_CULL_FACE);
         lightingShader.use();
         model = glm::mat4(1.0f);
         model = glm::translate(model, flashlightPos);
-        model = glm::translate(model, glm::vec3(1.5*cos(currentTime), 0.0f, 1.5*sin(currentTime)));
+        model = glm::translate(model, glm::vec3(1.3*cos(currentTime), 0.0f, 1.3*sin(currentTime)));
         model = glm::rotate(model, (float)5.7, glm::vec3(0.0f, 1.0f, 0.0));
         model = glm::scale(model, glm::vec3(.1f));
         lightingShader.setMat4("model", model);
         flashlightModel.Draw(lightingShader);
         glEnable(GL_CULL_FACE);
 
-        //skybox draw
-        glCullFace(GL_BACK); //mozda nepotrebno ubuduce
+        // render unutrasnjosti kutije
+        glCullFace(GL_BACK);
+        //ukljucujemo samo amb komponentu da se unutrasnjost poklona ne bi presijavala
+        updateShaderValues(lightingShader);
+        model = glm::mat4(1.0f);
+        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+        lightingShader.setMat4("model", model);
+        glBindVertexArray(unutrasnjostVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, cardboardTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, cardboardTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+
+        //render svetla iz lampe
+        if(enablePointLight){
+            flashlightShader.use();
+            flashlightShader.setMat4("projection", projection);
+            flashlightShader.setMat4("view", view);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, flashlightPos);
+            model = glm::translate(model, glm::vec3(1.3*cos(currentTime)-0.1, 0.0f, 1.3*sin(currentTime)-0.065));
+            model = glm::rotate(model, (float)4.12, glm::vec3(0.0f, 1.0f, 0.0));
+            model = glm::scale(model, glm::vec3(0.019f)); // a smaller cube
+            flashlightShader.setMat4("model", model);
+            lightSourceModel.Draw(flashlightShader);
+        }
+
+        //skybox
         glDepthMask(GL_FALSE);
         glDepthFunc(GL_LEQUAL);
         skyboxShader.use();
         skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));
         skyboxShader.setMat4("projection", projection);
+        glDepthFunc(GL_LEQUAL);
         glBindVertexArray(skyboxVAO);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
         glDepthFunc(GL_LESS);
-        // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-        // -------------------------------------------------------------------------------
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    // optional: de-allocate all resources once they've outlived their purpose:
-    // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &kutijaVAO);
+    glDeleteVertexArrays(1, &unutrasnjostVAO);
     glDeleteVertexArrays(1, &skyboxVAO);
     glDeleteBuffers(1, &VBO1);
     glDeleteBuffers(1, &skyboxVBO);
 
-    // glfw: terminate, clearing all previously allocated GLFW resources.
-    // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -426,11 +382,7 @@ void processInput(GLFWwindow *window){
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
@@ -492,7 +444,10 @@ unsigned int loadTexture(char const * path){
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
-        flag = -flag;
+        shouldPause = !shouldPause;
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        enablePointLight = !enablePointLight;
 }
 
 unsigned int loadCubemap(vector<std::string> faces){
@@ -500,18 +455,15 @@ unsigned int loadCubemap(vector<std::string> faces){
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-    int width, height, nrComponents;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
-        if (data)
-        {
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++){
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data){
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         }
-        else
-        {
-            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+        else{
+            std::cerr << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
     }
@@ -523,3 +475,15 @@ unsigned int loadCubemap(vector<std::string> faces){
 
     return textureID;
 }
+
+void updateShaderValues(Shader shader){
+    shader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
+    shader.setVec3("dirLight.specular", 0.0f, 0.0f, 0.0f);
+    shader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
+    shader.setVec3("pointLight.diffuse", 0.0f, 0.0f, 0.0f);
+    shader.setVec3("pointLight.specular", 0.0f, 0.0f, 0.0f);
+    shader.setFloat("pointLight.constant", 1.0f);
+    shader.setFloat("pointLight.linear", 0.09);
+    shader.setFloat("pointLight.quadratic", 0.032);
+}
+#pragma clang diagnostic pop
