@@ -6,7 +6,7 @@ ________________________________________________________________________________
 
 -Kamera koja moze da se pomera (na VM gde nije integrisan kursor misa promeniti GL_CURSOR_DISABLED na GL_CURSOR_HIDDEN ili GL_CURSOR_NORMAL jer moze da se desi da baguje)
 
--Model klasa lampe koja se vrti u krug
+-Model klasa: lampa koja se vrti u krug
 
 -Tackasti izvor svetlosti (gore pomenuta lampa) i direkcioni izvor svetlosti
 
