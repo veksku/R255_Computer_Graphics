@@ -2,7 +2,7 @@
 __________________________________________________________________________________________________________________________________
 Sadrzaj projekta
 __________________________________________________________________________________________________________________________________
--Model poklona nacrtan preko koordinata kocke i koji ima difuznu i spekularnu teksturu
+-Model poklona nacrtan koristeci koordinate kocke sa vezbi, ima difuznu i spekularnu teksturu
 
 -Kamera koja moze da se pomera (na VM gde nije integrisan kursor misa promeniti GL_CURSOR_DISABLED na GL_CURSOR_HIDDEN ili GL_CURSOR_NORMAL jer moze da se desi da baguje)
 
