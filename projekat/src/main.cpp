@@ -1,7 +1,3 @@
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma ide diagnostic ignored "cert-err58-cpp"
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
@@ -37,10 +33,12 @@ float lastY =  SCR_HEIGHT / 2.0f;
 double deltaTime = 0.0f;
 double lastFrame = 0.0f;
 
+//globalne promenljive koje uglavnom sluze za funkciju key_fallback
 double currentTime = glfwGetTime();
 double timeDiff = 0.0;
 bool shouldPause = true;
 bool enablePointLight = true;
+int boxCullingMode = 0;
 
 glm::vec3 flashlightPos(2.0f, 0.1f, 1.3f);
 
@@ -134,7 +132,6 @@ int main(){
             -0.5f,  0.5f, -0.5f, 0.0f,  1.0f,  0.0f, 0.0f, 1.0f
     };
     float skyboxVertices[] = {
-            // positions
             -1.0f,  1.0f, -1.0f,
             -1.0f, -1.0f, -1.0f,
              1.0f, -1.0f, -1.0f,
@@ -177,7 +174,7 @@ int main(){
             -1.0f, -1.0f,  1.0f,
              1.0f, -1.0f,  1.0f
     };
-    //vertexi za spoljasnjost kutije
+    //spoljasnjost kutije
     unsigned int VBO1, kutijaVAO;
     glGenVertexArrays(1, &kutijaVAO);
     glGenBuffers(1, &VBO1);
@@ -193,7 +190,7 @@ int main(){
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    //unutrasnjost kutije
+    //unutrasnjost kutije, isti VBO
     unsigned int unutrasnjostVAO;
     glGenVertexArrays(1, &unutrasnjostVAO);
 
@@ -235,12 +232,9 @@ int main(){
     lightingShader.use();
     lightingShader.setInt("material.diffuse",0);
     lightingShader.setInt("material.specular", 1);
-
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
 
-    // render loop
-    // -----------
     while (!glfwWindowShouldClose(window))
     {
         double currentFrame = glfwGetTime();
@@ -265,7 +259,7 @@ int main(){
         lightingShader.use();
 
         lightingShader.setVec3("viewPos", camera.Position);
-        lightingShader.setFloat("material.shininess", 128.0f);
+        lightingShader.setFloat("material.shininess", 256.0f);
         lightingShader.setVec3("dirLight.direction", glm::vec3(0.2f, -1.25, -0.4f));
 
         lightingShader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
@@ -285,21 +279,24 @@ int main(){
         lightingShader.setMat4("projection", projection);
         lightingShader.setMat4("view", view);
 
-        //spoljasnjost kutije
-        glCullFace(GL_FRONT);
-        glBindVertexArray(kutijaVAO);
+        glm::mat4 model = glm::mat4(1.0f);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, diffuseTexture);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularTexture);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-        lightingShader.setMat4("model", model);
-        glBindVertexArray(kutijaVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
 
-        // render modela lampe
+        //spoljasnjost kutije, tasterom ENTER podesavamo da l se vide spoljasnjost, unutrasnjost ili oba
+        if(boxCullingMode == 0 || boxCullingMode == 1){
+            glCullFace(GL_FRONT);
+            glBindVertexArray(kutijaVAO);
+            model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+            lightingShader.setMat4("model", model);
+            glBindVertexArray(kutijaVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+        }
+
+        // render modela lampe, iskljucujem culling da bi model izgledao kako treba
         glDisable(GL_CULL_FACE);
         lightingShader.use();
         model = glm::mat4(1.0f);
@@ -311,20 +308,24 @@ int main(){
         flashlightModel.Draw(lightingShader);
         glEnable(GL_CULL_FACE);
 
-        // render unutrasnjosti kutije
+        //drugi cullface za ostale stvari koje se renderuju
         glCullFace(GL_BACK);
-        //ukljucujemo samo amb komponentu da se unutrasnjost poklona ne bi presijavala
-        updateShaderValues(lightingShader);
-        model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
-        lightingShader.setMat4("model", model);
-        glBindVertexArray(unutrasnjostVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cardboardTexture);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, cardboardTexture);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        glBindVertexArray(0);
+
+        //unutrasnjost kutije, tasterom ENTER podesavamo da l se vide spoljasnjost, unutrasnjost ili oba
+        if(boxCullingMode == 0 || boxCullingMode == 2){
+            //ukljucujemo samo amb komponentu da se unutrasnjost poklona ne bi presijavala u odnosu na druge izvore svetlosti
+            updateShaderValues(lightingShader);
+            model = glm::mat4(1.0f);
+            model = glm::rotate(model, (float)1, glm::vec3(0.0f, 1.0f, 0.0f));
+            lightingShader.setMat4("model", model);
+            glBindVertexArray(unutrasnjostVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, cardboardTexture);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, cardboardTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+        }
 
         //render svetla iz lampe
         if(enablePointLight){
@@ -371,7 +372,6 @@ void processInput(GLFWwindow *window){
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // pomeranje kamere pomocu tastature
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera.ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -394,7 +394,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos){
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float yoffset = lastY - ypos;
     lastX = xpos;
     lastY = ypos;
 
@@ -448,6 +448,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         enablePointLight = !enablePointLight;
+
+    if (key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+        boxCullingMode = (boxCullingMode + 1)%3;
 }
 
 unsigned int loadCubemap(vector<std::string> faces){
@@ -477,6 +480,7 @@ unsigned int loadCubemap(vector<std::string> faces){
 }
 
 void updateShaderValues(Shader shader){
+    shader.setVec3("dirLight.ambient", 0.3f, 0.3f, 0.3f);
     shader.setVec3("dirLight.diffuse", 0.0f, 0.0f, 0.0f);
     shader.setVec3("dirLight.specular", 0.0f, 0.0f, 0.0f);
     shader.setVec3("pointLight.position", flashlightPos+glm::vec3(1.5*cos(currentTime)-0.1, 0.0f, 1.5*sin(currentTime)-0.065));
@@ -486,4 +490,3 @@ void updateShaderValues(Shader shader){
     shader.setFloat("pointLight.linear", 0.09);
     shader.setFloat("pointLight.quadratic", 0.032);
 }
-#pragma clang diagnostic pop
